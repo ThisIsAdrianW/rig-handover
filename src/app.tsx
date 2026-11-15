@@ -31,12 +31,10 @@ export function createApp(config: RigConfig = loadConfig()) {
     );
   });
 
-  // Same rows as the page, as JSON (plan §2b). Both read readNight(config.runsDir, night),
-  // so the page and the JSON can never disagree (ADR 0001).
+  // Same readNight as the digest page: the page and the JSON must never disagree (ADR 0001).
   app.get('/api/digest/:night', (c) => {
-    const night = c.req.param('night');
-    const digest = readNight(config.runsDir, night);
-    if (digest === null) return c.notFound();
+    const digest = readNight(config.runsDir, c.req.param('night'));
+    if (digest === null) return c.json({ error: 'not found' }, 404);
     return c.json(digest);
   });
 
