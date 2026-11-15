@@ -1,4 +1,16 @@
+import { readNight } from '../digest/reader.js';
 import type { Status } from '../status.js';
+
+// Count the ok / retry / fail statuses for one night from the same reader the digest page
+// uses, so the board and the digest never disagree (ADR 0001). The digest has its own reader
+// call (there is no digest to reuse here; no client JS, ADR 0001).
+export function nightCounts(runsDir: string, night: string): { ok: number; retry: number; fail: number } | null {
+  const digest = readNight(runsDir, night);
+  if (digest === null) return null;
+  const counts = { ok: 0, retry: 0, fail: 0 };
+  for (const row of digest.rows) counts[row.lastStatus] += 1;
+  return counts;
+}
 
 export function StatusBoard({ status }: { status: Status }) {
   return (
@@ -19,9 +31,12 @@ export function StatusBoard({ status }: { status: Status }) {
         <p class="mute">nothing in runs/</p>
       ) : (
         <ul>
-          {status.nights.map((n) => (
-            <li>{n}</li>
-          ))}
+          {status.nights.map((n) => {
+            const counts = nightCounts(status.runsDir, n);
+            return (
+              <li><a href={`/digest/${n}`}>{n}</a> · {counts === null ? '—' : `ok ${counts.ok} · retry ${counts.retry} · fail ${counts.fail}`}</li>
+            );
+          })}
         </ul>
       )}
     </>
